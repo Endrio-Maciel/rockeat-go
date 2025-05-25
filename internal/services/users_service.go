@@ -6,16 +6,27 @@ import (
 
 	"github.com/endrio-maciel/rockeat-go.git/internal/store/pgstore"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/crypto/bcrypt"
 )
 
-var ErrDuplicatedEmailOrPassword = errors.New("username or email alredy exists")
+var (
+	ErrDuplicatedEmailOrUsername = errors.New("username or email alredy exists")
+	ErrInvalidCredentials        = errors.New("invalid credentials")
+)
 
 type UserService struct {
 	pool    *pgxpool.Pool
 	queries *pgstore.Queries
+}
+
+func NewUserService(pool *pgxpool.Pool) UserService {
+	return UserService{
+		pool:    pool,
+		queries: pgstore.New(pool),
+	}
 }
 
 func (us *UserService) CreateUser(ctx context.Context, userName, email, password, bio string) (uuid.UUID, error) {
@@ -35,7 +46,7 @@ func (us *UserService) CreateUser(ctx context.Context, userName, email, password
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
-			return uuid.UUID{}, ErrDuplicatedEmailOrPassword
+			return uuid.UUID{}, ErrDuplicatedEmailOrUsername
 		}
 		return uuid.UUID{}, err
 	}
@@ -44,4 +55,22 @@ func (us *UserService) CreateUser(ctx context.Context, userName, email, password
 
 }
 
-// "user_name", "email", "password_hash", "bio"
+func (us *UserService) AuthenticateUser(ctx context.Context, email, password string) (uuid.UUID, error) {
+	user, err := us.queries.GetUserByEmail(ctx, email)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return uuid.UUID{}, ErrInvalidCredentials
+		}
+		return uuid.UUID{}, err
+	}
+
+	err = bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(password))
+	if err != nil {
+		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+			return uuid.UUID{}, ErrInvalidCredentials
+		}
+		return uuid.UUID{}, err
+	}
+
+	return user.ID, nil
+}
