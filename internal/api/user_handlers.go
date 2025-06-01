@@ -63,7 +63,6 @@ func (api *Api) HandleLoginUser(w http.ResponseWriter, r *http.Request) {
 	jsonutils.EncodeJson(w, r, http.StatusOK, map[string]any{
 		"message": "login in successfuly",
 	})
-	return
 }
 
 func (api *Api) HandleLogoutUser(w http.ResponseWriter, r *http.Request) {
