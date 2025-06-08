@@ -37,7 +37,7 @@ func (api *Api) HandleCreateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jsonutils.EncodeJson(w, r, http.StatusOK, map[string]any{
+	jsonutils.EncodeJson(w, r, http.StatusCreated, map[string]any{
 		"message":    "product created with success",
 		"product_id": id,
 	})

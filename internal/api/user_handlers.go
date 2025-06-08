@@ -79,3 +79,7 @@ func (api *Api) HandleLogoutUser(w http.ResponseWriter, r *http.Request) {
 		"message": "logged out successfuly",
 	})
 }
+
+// func (api *Api) HandleSubscribeUserToAuction() {
+
+// }
