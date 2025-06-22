@@ -35,7 +35,7 @@ func (api *Api) HandleSubscribeUserToAuction(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	_, ok := api.Sessions.Get(r.Context(), "AuthenticatedUserId").(uuid.UUID) // userId
+	_, ok := api.Sessions.Get(r.Context(), "AuthenticatedUserId").(uuid.UUID) //userId
 	if !ok {
 		jsonutils.EncodeJson(w, r, http.StatusInternalServerError, map[string]any{
 			"message": "unexpected error, try again later",
@@ -43,12 +43,32 @@ func (api *Api) HandleSubscribeUserToAuction(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	_, err = api.WsUpgrader.Upgrade(w, r, nil) // conn
-	if err != nil {
-		jsonutils.EncodeJson(w, r, http.StatusInternalServerError, map[string]any{
-			"message": "could not upgrade connection to a websocket protocol",
+	api.AuctionLobby.Lock()
+	// _, ok := api.AuctionLobby.Rooms[productId] // room
+	api.AuctionLobby.Unlock()
+
+	if !ok {
+		jsonutils.EncodeJson(w, r, http.StatusBadRequest, map[string]any{
+			"message": "the auction has ended",
 		})
 		return
+	}
+
+	// conn, err = api.WsUpgrader.Upgrade(w, r, nil)
+	// if err != nil {
+	// 	jsonutils.EncodeJson(w, r, http.StatusInternalServerError, map[string]any{
+	// 		"message": "could not upgrade connection to a websocket protocol",
+	// 	})
+	// 	return
+	// }
+
+	// client := services.NewClient(room, conn, userId)
+
+	// room.Resgister <- client
+	// go client.ReadEventLoop()
+	// go client.WriteEventLoop()
+	for {
+
 	}
 
 }
